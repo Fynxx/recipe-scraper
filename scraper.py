@@ -30,6 +30,17 @@ title = title_soup.text
 servings_split = servings_soup.text.split()
 servings = servings_split[0]
 
+#replace fractions
+# 1/2 \u00BD - 0.5      ½
+# 1/4 \u00BC - 0.25     ¼
+# 3/4 \u00BE - 0.75     ¾
+# 1/3 \u2153 - 0.33     ⅓
+# 1/8 \u215B - 0.125    ⅛
+# 2/3 \u2154 - 0.66     ⅔
+# 1/5 \u2155 - 0.2      ⅕
+
+# steps = steps_soup.replace('\u00BD', '0.5')
+
 #loop through units list to add amounts and units to their corresponding lists
 list_unit = []
 list_amount = []
@@ -44,6 +55,56 @@ for u in units :
     else:
         list_amount.append(split[0])
         list_unit.append("")        
+
+#fix weird fractions, it looks for fractions, converts them to decimals,
+#then if it is a number and a fraction, it adds them together(7½ becomes 7,5)
+#and it makes sure that everything is a float in the list.
+list_amount_fixed = []
+for r in list_amount :
+    if '½' in r :
+        h = r.replace('½', ' 0.5')
+        split = h.split()
+        if len(split) > 1:
+            added = float(split[0]) + float(split[1])
+            list_amount_fixed.append(float(added))
+        else :
+            list_amount_fixed.append(float(split[0]))
+    elif '¼' in r :
+        q = r.replace('¼', ' 0.25')
+        split = h.split()
+        if len(split) > 1:
+            added = float(split[0]) + float(split[1])
+            list_amount_fixed.append(float(added))
+        else :
+            list_amount_fixed.append(float(split[0]))
+    elif '¾' in r :
+        tq = r.replace('¾', ' 0.75')
+        split = h.split()
+        if len(split) > 1:
+            added = float(split[0]) + float(split[1])
+            list_amount_fixed.append(float(added))
+        else :
+            list_amount_fixed.append(float(split[0]))
+    else :
+        list_amount_fixed.append(float(r))
+    # oe = r.replace('⅛', ' 0.125')
+    # list_amount_fixed.append(oe)
+    # ot = r.replace('⅓', ' 0.33')
+    # list_amount_fixed.append(ot)
+    # tt = r.replace('⅔', ' 0.66')
+    # list_amount_fixed.append(tt)
+    # of = r.replace('⅕', ' 0.2')
+    # list_amount_fixed.append(of)
+
+# print(type(list_amount_fixed[0]))
+# print(type(list_amount_fixed[5]))
+
+
+# splittemp = list_amount_fixed[13].split()
+# print(splittemp)
+# if len(splittemp) > 1 :
+#     added = float(splittemp[0]) + float(splittemp[1])
+    # print(added)
 
 
 #loop through ingredients list to add ingredients to it's list
@@ -63,20 +124,15 @@ for s in steps :
 for n in nutrition_name_soup :
     if n.span.text == 'energie':
         calories = n.find('span',{'class':'recipe-footer-nutrition_nutritionValue__EhKyZ'}).text
-        print(calories)
     elif n.span.text == 'koolhydraten':
         carbs = n.find('span',{'class':'recipe-footer-nutrition_nutritionValue__EhKyZ'}).text
-        print(carbs)
     elif n.span.text == 'vet':
         fats = n.find('span',{'class':'recipe-footer-nutrition_nutritionValue__EhKyZ'}).text
-        print(fats)
     elif n.span.text == 'eiwit':
         protein = n.find('span',{'class':'recipe-footer-nutrition_nutritionValue__EhKyZ'}).text
-        print(protein)
 
 #generate random ID
 recipe_id = random.randint(0,9999)
-print(recipe_id)
 
 #generating the JSON
 #loop through all recipe ingredients, extract all information (name, amount and unit), append it to all_ingredients list
@@ -84,7 +140,7 @@ all_ingredients = []
 recipe_index = 0
 for r in list_name :
     recipe_ingredient = {'name':list_name[recipe_index],
-                        'amount':list_amount[recipe_index],
+                        'amount':list_amount_fixed[recipe_index],
                         'unit':list_unit[recipe_index]}  #add , and ]
     recipe_index += 1
     # print(recipe_ingredient)
@@ -95,44 +151,26 @@ for r in list_name :
 #add the rest of the information to the JSON file
 recipe = {
     'title': title,
-    'servings': servings,
+    'servings': float(servings),
     'description': description,
     'recipe-ingredients': [all_ingredients],
     'favourite':True,
     'rating':rating,
     'nutritionValuesPerServing':[{
-        'carbs': carbs,
-        'fats': fats,
-        'protein': protein,
-        'calories': calories
+        'carbs': float(carbs),
+        'fats': float(fats),
+        'protein': float(protein),
+        'calories': float(calories)
     }] ,
     'id': recipe_id   
 }
 
 #dump information into JSON file
-with open('recipe'+str(recipe_id)+'.json','w') as recipe_dumped :
+with open('recipe.json','w') as recipe_dumped :
     json.dump(recipe, recipe_dumped)
 
+print('Scraping done and JSON file created!')
 
-# {
-#     "name": "Italian keto meatballs with mozzarella cheese",
-#     "servings": 4,
-#     "description": "Tomato sauce, rich and comforting. Mozzarella, fresh and creamy. Meatballs, with just the right touch of onion and basil. It's like spaghetti night, without the carbs. Enjoy every ketolicious bite!",
-#     "recipe-ingredients":{
-
-#     }
-#     "instructions": "1. Place ground beef, parmesan cheese, egg, salt and spices in a bowl and blend thoroughly. Form the mixture into meatballs, about 1 oz (30 grams) each. It helps to keep your hands wet while forming the balls.\r\n2. Heat up the olive oil in a large skillet and sauté the meatballs until they're golden brown on all sides.\r\n3. Lower the heat and add the canned tomatoes. Let simmer for 15 minutes, stirring every couple of minutes. Season with salt and pepper to taste. Add parsley and stir. You can prepare the dish up to this point for freezing.\r\n4. Melt the butter in a separate frying pan and fry the spinach for 1-2 minutes, stirring continuously. Season with salt and pepper to taste. Add the spinach to the meatballs, and stir to combine.\r\n5. Serve with mozzarella cheese on top, torn into bite-sized pieces.\r\n",
-#     "favorite": true,
-#     "rating": 3,
-#     "nutritionValuesPerServing": {
-#         "netCarbs": 0.0,
-#         "carbs": 0.0,
-#         "fats": 0.0,
-#         "protein": 0.0,
-#         "calories": 200.0
-#     },
-#     "id": 1
-# }
 
 # recipe = {
 #   'title': 'string',
